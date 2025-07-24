@@ -1,9 +1,22 @@
-from typing import Any, ClassVar, Dict, List, Annotated
+from typing import Any, ClassVar, Dict, List, Annotated, TypedDict
 from langchain_core.messages import AnyMessage, SystemMessage, AIMessage, HumanMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
+
+MAGENTIC_ONE_CODER_DESCRIPTION = "A helpful and general-purpose AI assistant that has strong language skills, Python skills, and Linux command line skills."
+
+MAGENTIC_ONE_CODER_SYSTEM_MESSAGE = """You are a helpful AI assistant.
+Solve tasks using your coding and language skills.
+In the following cases, suggest python code (in a python coding block) or shell script (in a sh coding block) for the user to execute.
+    1. When you need to collect info, use the code to output the info you need, for example, browse or search the web, download/read a file, print the content of a webpage or a file, get the current date/time, check the operating system. After sufficient info is printed and the task is ready to be solved based on your language skill, you can solve the task by yourself.
+    2. When you need to perform some task with code, use the code to perform the task and output the result. Finish the task smartly.
+Solve the task step by step if you need to. If a plan is not provided, explain your plan first. Be clear which step uses code, and which step uses your language skill.
+When using code, you must indicate the script type in the code block. The user cannot provide any other feedback or perform any other action beyond executing the code you suggest. The user can't modify your code. So do not suggest incomplete code which requires users to modify. Don't use a code block if it's not intended to be executed by the user.
+Don't include multiple code blocks in one response. Do not ask users to copy and paste the result. Instead, use the 'print' function for the output when relevant. Check the execution result returned by the user.
+If the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
+When you find an answer, verify the answer carefully. Include verifiable evidence in your response if possible."""
 
 class MagenticOneCoderAgent:
     """An agent, used by MagenticOne that provides coding assistance using an LLM model client.
@@ -20,15 +33,12 @@ class MagenticOneCoderAgent:
         self.name = name
         self.model_client = model_client
 
-        # Fixed system prompt for coding assistance (assumed based on description)
-        self.system_prompt = (
-            "You are a highly skilled coding assistant. Your role is to write code, analyze information, "
-            "and create artifacts based on the tasks provided. Use your expertise to generate accurate "
-            "and efficient code solutions. Do not deviate from coding-related tasks."
-        )
+        # Use the sealed description and system prompt from AutoGen
+        self.description = MAGENTIC_ONE_CODER_DESCRIPTION
+        self.system_prompt = MAGENTIC_ONE_CODER_SYSTEM_MESSAGE
 
         # Define the state
-        class AgentState typing.TypedDict:
+        class AgentState(TypedDict):
             messages: Annotated[List[AnyMessage], add_messages]
 
         # Node function: call the model
